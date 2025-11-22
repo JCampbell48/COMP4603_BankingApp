@@ -1,9 +1,10 @@
 #pragma once
 #include "Account.h"
+#include "Account.h"
 
 /**
  * Concrete implementation of Account for savings accounts
- * Using this to test the Account base class
+ * This is a simple example to test the Account base class
  */
 class SavingsAccount : public Account {
 private:
@@ -14,7 +15,7 @@ public:
                    double balance, double interestRate = 0.02);
 
     // Implementation of pure virtual methods
-    bool applyInterest(std::chrono::system_clock::time_point now) override;
+    bool applyInterest(const Timestamp& now) override;
 
     std::string getAccountType() const override;
 

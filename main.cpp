@@ -2,6 +2,7 @@
 #include <iomanip>
 #include "Account.h"
 #include "SavingsAccount.h"
+#include "Timestamp.h"
 
 int main() {
     std::cout << "=== Banking System - Account Class Test ===" << std::endl << std::endl;
@@ -59,7 +60,7 @@ int main() {
 
         // Test interest application
         std::cout << "Testing interest application..." << std::endl;
-        account1.applyInterest(std::chrono::system_clock::now());
+        account1.applyInterest(Timestamp::now());
         std::cout << std::endl;
 
         std::cout << "=== All tests completed ===" << std::endl;

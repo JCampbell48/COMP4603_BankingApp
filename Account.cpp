@@ -3,11 +3,11 @@
 #include <iostream>
 
 // Default constructor
-Account::Account() 
-    : accountNo(""), 
-      ownerId(""), 
+Account::Account()
+    : accountNo(""),
+      ownerId(""),
       balance(0.0),
-      lastInterestApplied(std::chrono::system_clock::now()) {
+      lastInterestApplied(Timestamp::now()) {
 }
 
 // Parameterized constructor
@@ -15,8 +15,8 @@ Account::Account(const std::string& accountNo, const std::string& ownerId, doubl
     : accountNo(accountNo),
       ownerId(ownerId),
       balance(balance),
-      lastInterestApplied(std::chrono::system_clock::now()) {
-    
+      lastInterestApplied(Timestamp::now()) {
+
     if (balance < 0) {
         throw std::invalid_argument("Initial balance cannot be negative");
     }
@@ -49,7 +49,7 @@ bool Account::deposit(double amount) {
         std::cerr << "Deposit amount must be positive" << std::endl;
         return false;
     }
-    
+
     balance += amount;
     // TODO: Create and record deposit transaction
     return true;
@@ -61,12 +61,12 @@ bool Account::withdraw(double amount) {
         std::cerr << "Withdrawal amount must be positive" << std::endl;
         return false;
     }
-    
+
     if (amount > balance) {
         std::cerr << "Insufficient funds" << std::endl;
         return false;
     }
-    
+
     balance -= amount;
     // TODO: Create and record withdrawal transaction
     return true;
@@ -78,16 +78,16 @@ bool Account::transferTo(Account& target, double amount) {
         std::cerr << "Transfer amount must be positive" << std::endl;
         return false;
     }
-    
+
     if (amount > balance) {
         std::cerr << "Insufficient funds for transfer" << std::endl;
         return false;
     }
-    
+
     // Perform the transfer
     balance -= amount;
     target.balance += amount;
-    
+
     // TODO: Create and record transfer transactions for both accounts
     return true;
 }
@@ -98,7 +98,7 @@ bool Account::close() {
         std::cerr << "Cannot close account with positive balance. Please withdraw all funds first." << std::endl;
         return false;
     }
-    
+
     // TODO: Mark account as closed (might need an 'isClosed' flag)
     return true;
 }
@@ -106,8 +106,7 @@ bool Account::close() {
 // Destructor - clean up transaction history
 Account::~Account() {
     for (Transaction* t : history) {
-
-        //TODO ** Will need to uncomment 'delete t' once Transaction class implemented
+        //TODO uncomment once Transaction class implemented
         // delete t;
     }
     history.clear();

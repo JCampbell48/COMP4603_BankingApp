@@ -10,13 +10,12 @@ SavingsAccount::SavingsAccount(const std::string& accountNo, const std::string& 
     }
 }
 
-bool SavingsAccount::applyInterest(std::chrono::system_clock::time_point now) {
+bool SavingsAccount::applyInterest(const Timestamp& now) {
     // Simple interest calculation
     // TODO: Can integrate InterestPolicy pattern later if needed
 
     // Calculate time difference since last interest application
-    auto duration = std::chrono::duration_cast<std::chrono::hours>(now - lastInterestApplied);
-    double days = duration.count() / 24.0;
+    double days = now.daysSince(lastInterestApplied);
 
     // Apply simple daily interest
     double interest = balance * (interestRate / 365.0) * days;

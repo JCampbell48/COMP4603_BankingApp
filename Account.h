@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-#include <chrono>
+#include "Timestamp.h"
 
 // Forward declaration - we'll implement Transaction class next
 class Transaction;
@@ -17,7 +17,7 @@ protected:
     std::string ownerId;
     double balance;
     std::vector<Transaction*> history;
-    std::chrono::system_clock::time_point lastInterestApplied;
+    Timestamp lastInterestApplied;
 
     // Protected method to record transactions
     void record(Transaction* transaction);
@@ -44,7 +44,7 @@ public:
     virtual bool transferTo(Account& target, double amount);
 
     // Interest application - simplified for now, can add InterestPolicy later
-    virtual bool applyInterest(std::chrono::system_clock::time_point now) = 0;
+    virtual bool applyInterest(const Timestamp& now) = 0;
 
     // Account management
     virtual bool close();
