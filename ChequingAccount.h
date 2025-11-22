@@ -17,7 +17,7 @@ public:
     bool withdraw(double amount) override;
 
 
-    bool applyInterest(const Timestamp& now) override = 0;
+    bool applyInterest(const Timestamp& now) override;
     std::string getAccountType() const override;
 
 };
