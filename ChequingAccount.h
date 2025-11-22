@@ -3,13 +3,21 @@
 
 class ChequingAccount : public Account {
 private:
-    doubtl overdraftLimit;
+    double overdraftLimit;
 
 public:
-    ChequingAccount(std::string accountNo, string ownerId, double balance, double overdraftLimit);
-    double getOverdraftLimit();
-    setOverdraftLimit(double limit);
-    bool deposit(double amount);
-    bool withdraw(double amount);
+    // constructor
+    ChequingAccount(const std::string& accountNo, const std::string& ownerId, double balance, double overdraftLimit);
+
+    //overdraft logic
+    double getOverdraftLimit() const;
+    void setOverdraftLimit(double limit);
+
+    //override withdraw to allow overdraft
+    bool withdraw(double amount) override;
+
+
+    bool applyInterest(const Timestamp& now) override = 0;
+    std::string getAccountType() const override;
 
 };
