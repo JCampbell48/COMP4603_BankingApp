@@ -1,12 +1,13 @@
 #pragma once
+
 #include "Transaction.h"
 #include "Account.h"
 
 /**
- * DepositTransaction - Handles deposit operations
+ * WithdrawTransaction - Handles withdrawal operations
  * Can be executed and undone
  */
-class DepositTransaction : public Transaction {
+class WithdrawTransaction : public Transaction {
 private:
     Account& account;
     double amount;
@@ -14,14 +15,14 @@ private:
 
 public:
     // Constructor
-    DepositTransaction(Account& account, double amount, const Timestamp& timestamp,
-                      const std::string& description);
+    WithdrawTransaction(Account& account, double amount, const Timestamp& timestamp,
+                       const std::string& description);
 
     // Implementation of pure virtual methods
     bool execute() override;
     bool undo() override;
 
-    // Override record to include deposit-specific details
+    // Override record to include withdrawal-specific details
     std::string record() const override;
 
     // Getters
