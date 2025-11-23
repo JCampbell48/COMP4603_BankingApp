@@ -1,84 +1,148 @@
 #include <iostream>
 #include <iomanip>
+#include <vector>
 #include "Account.h"
-#include "ChequingAccount.h"
 #include "SavingsAccount.h"
+#include "ChequingAccount.h"
+#include "Transaction.h"
+#include "DepositTransaction.h"
+#include "WithdrawTransaction.h"
+#include "TransferTransaction.h"
 #include "Timestamp.h"
 
 int main() {
-    std::cout << "=== ChequingAccount Test ===" << std::endl << std::endl;
+    std::cout << "=== Transaction System Test ===" << std::endl << std::endl;
+    std::cout << std::fixed << std::setprecision(2);
 
     try {
-        // Create a chequing account with $500 balance and $200 overdraft
-        ChequingAccount chequing("CHQ-001", "USER-789", 500.0, 200.0);
+        // Create some accounts
+        SavingsAccount savings("SAV-001", "USER-123", 1000.0, 0.05);
+        ChequingAccount chequing("CHQ-001", "USER-123", 500.0, 200.0);
 
-        std::cout << "Chequing Account created:" << std::endl;
-        std::cout << "  Account No: " << chequing.getAccountNo() << std::endl;
-        std::cout << "  Type: " << chequing.getAccountType() << std::endl;
-        std::cout << "  Balance: $" << std::fixed << std::setprecision(2)
-                  << chequing.getBalance() << std::endl;
-        std::cout << "  Overdraft Limit: $" << chequing.getOverdraftLimit() << std::endl;
-        std::cout << "  Total Available: $"
-                  << (chequing.getBalance() + chequing.getOverdraftLimit()) << std::endl;
+        std::cout << "Initial Account Balances:" << std::endl;
+        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
+        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
         std::cout << std::endl;
 
-        // Test normal withdrawal
-        std::cout << "Test 1: Withdraw $300 (within balance)..." << std::endl;
-        if (chequing.withdraw(300.0)) {
-            std::cout << "  Success! New balance: $" << chequing.getBalance() << std::endl;
+        // Store executed transactions for undo demo
+        std::vector<Transaction*> transactions;
+
+        // Test 1: Deposit Transaction
+        std::cout << "=== Test 1: Deposit Transaction ===" << std::endl;
+        DepositTransaction* deposit = new DepositTransaction(
+            savings, 500.0, Timestamp::now(), "Paycheck deposit"
+        );
+
+        std::cout << "Executing deposit of $500..." << std::endl;
+        if (deposit->execute()) {
+            std::cout << "New savings balance: $" << savings.getBalance() << std::endl;
+            transactions.push_back(deposit);
         }
         std::cout << std::endl;
 
-        // Test overdraft withdrawal
-        std::cout << "Test 2: Withdraw $300 (will use overdraft)..." << std::endl;
-        if (chequing.withdraw(300.0)) {
-            std::cout << "  Success! New balance: $" << chequing.getBalance() << std::endl;
-            std::cout << "  Overdraft used: $" << (-chequing.getBalance()) << std::endl;
-            std::cout << "  Remaining overdraft: $"
-                      << (chequing.getOverdraftLimit() + chequing.getBalance()) << std::endl;
+        // Test 2: Withdrawal Transaction
+        std::cout << "=== Test 2: Withdrawal Transaction ===" << std::endl;
+        WithdrawTransaction* withdrawal = new WithdrawTransaction(
+            chequing, 200.0, Timestamp::now(), "ATM withdrawal"
+        );
+
+        std::cout << "Executing withdrawal of $200..." << std::endl;
+        if (withdrawal->execute()) {
+            std::cout << "New chequing balance: $" << chequing.getBalance() << std::endl;
+            transactions.push_back(withdrawal);
         }
         std::cout << std::endl;
 
-        // Test exceeding overdraft limit
-        std::cout << "Test 3: Try to withdraw $300 (exceeds overdraft limit)..." << std::endl;
-        if (!chequing.withdraw(300.0)) {
-            std::cout << "  Failed as expected!" << std::endl;
+        // Test 3: Transfer Transaction
+        std::cout << "=== Test 3: Transfer Transaction ===" << std::endl;
+        TransferTransaction* transfer = new TransferTransaction(
+            savings, chequing, 300.0, Timestamp::now(),
+            "Transfer to chequing for bills"
+        );
+
+        std::cout << "Executing transfer of $300 from savings to chequing..." << std::endl;
+        if (transfer->execute()) {
+            std::cout << "New savings balance:  $" << savings.getBalance() << std::endl;
+            std::cout << "New chequing balance: $" << chequing.getBalance() << std::endl;
+            transactions.push_back(transfer);
         }
         std::cout << std::endl;
 
-        // Deposit to recover
-        std::cout << "Test 4: Deposit $500 to recover..." << std::endl;
-        if (chequing.deposit(500.0)) {
-            std::cout << "  Success! New balance: $" << chequing.getBalance() << std::endl;
+        // Test 4: Display Transaction Records
+        std::cout << "=== Test 4: Transaction Records ===" << std::endl;
+        for (size_t i = 0; i < transactions.size(); ++i) {
+            std::cout << "\nTransaction " << (i + 1) << ":" << std::endl;
+            std::cout << transactions[i]->record() << std::endl;
         }
         std::cout << std::endl;
 
-        // Compare with SavingsAccount (no overdraft)
-        std::cout << "=== Comparison with SavingsAccount ===" << std::endl << std::endl;
-        SavingsAccount savings("SAV-001", "USER-789", 200.0, 0.05);
+        // Test 5: Undo Transactions
+        std::cout << "=== Test 5: Undo Transactions ===" << std::endl;
+        std::cout << "\nCurrent balances:" << std::endl;
+        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
+        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
+        std::cout << std::endl;
 
-        std::cout << "Savings Account: $" << savings.getBalance() << std::endl;
-        std::cout << "Try to withdraw $300 (no overdraft allowed)..." << std::endl;
-        if (!savings.withdraw(300.0)) {
-            std::cout << "  Failed as expected - savings accounts have no overdraft!" << std::endl;
+        std::cout << "Undoing last transaction (transfer)..." << std::endl;
+        if (transfer->undo()) {
+            std::cout << "After undo:" << std::endl;
+            std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
+            std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
         }
         std::cout << std::endl;
 
-        // Test interest application (chequing typically has none)
-        std::cout << "=== Interest Test ===" << std::endl << std::endl;
-        std::cout << "Apply interest to chequing account..." << std::endl;
-        if (chequing.applyInterest(Timestamp::now())) {
-            std::cout << "  Interest applied" << std::endl;
-        } else {
-            std::cout << "  No interest on chequing accounts (as expected)" << std::endl;
+        std::cout << "Undoing withdrawal..." << std::endl;
+        if (withdrawal->undo()) {
+            std::cout << "After undo:" << std::endl;
+            std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
         }
         std::cout << std::endl;
 
-        std::cout << "Apply interest to savings account..." << std::endl;
-        if (savings.applyInterest(Timestamp::now())) {
-            std::cout << "  Interest applied!" << std::endl;
+        std::cout << "Undoing deposit..." << std::endl;
+        if (deposit->undo()) {
+            std::cout << "After undo:" << std::endl;
+            std::cout << "  Savings: $" << savings.getBalance() << std::endl;
         }
         std::cout << std::endl;
+
+        std::cout << "Final balances (should match initial):" << std::endl;
+        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
+        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
+        std::cout << std::endl;
+
+        // Test 6: Failed Transaction
+        std::cout << "=== Test 6: Failed Transaction ===" << std::endl;
+        WithdrawTransaction* failedWithdraw = new WithdrawTransaction(
+            savings, 5000.0, Timestamp::now(), "Attempt large withdrawal"
+        );
+
+        std::cout << "Attempting to withdraw $5000 (should fail)..." << std::endl;
+        if (!failedWithdraw->execute()) {
+            std::cout << "Transaction correctly failed!" << std::endl;
+        }
+        std::cout << std::endl;
+
+        // Test 7: Double Execute Prevention
+        std::cout << "=== Test 7: Double Execute Prevention ===" << std::endl;
+        DepositTransaction* deposit2 = new DepositTransaction(
+            savings, 100.0, Timestamp::now(), "Test deposit"
+        );
+
+        std::cout << "First execute..." << std::endl;
+        deposit2->execute();
+        std::cout << "Balance: $" << savings.getBalance() << std::endl;
+
+        std::cout << "Attempting second execute (should fail)..." << std::endl;
+        deposit2->execute();
+        std::cout << "Balance unchanged: $" << savings.getBalance() << std::endl;
+        std::cout << std::endl;
+
+        // Cleanup
+        for (Transaction* t : transactions) {
+            delete t;
+        }
+        delete failedWithdraw;
+        delete deposit2;
 
         std::cout << "=== All tests completed ===" << std::endl;
 
