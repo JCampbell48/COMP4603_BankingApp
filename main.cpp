@@ -1,150 +1,185 @@
 #include <iostream>
 #include <iomanip>
-#include <vector>
+#include "AccountFactory.h"
+#include "AccountRepository.h"
+#include "AccountType.h"
 #include "Account.h"
 #include "SavingsAccount.h"
 #include "ChequingAccount.h"
-#include "Transaction.h"
-#include "DepositTransaction.h"
-#include "WithdrawTransaction.h"
-#include "TransferTransaction.h"
 #include "Timestamp.h"
 
 int main() {
-    std::cout << "=== Transaction System Test ===" << std::endl << std::endl;
+    std::cout << "=== AccountFactory and AccountRepository Test ===" << std::endl << std::endl;
     std::cout << std::fixed << std::setprecision(2);
 
     try {
-        // Create some accounts
-        SavingsAccount savings("SAV-001", "USER-123", 1000.0, 0.05);
-        ChequingAccount chequing("CHQ-001", "USER-123", 500.0, 200.0);
+        // Create factory and repository
+        AccountFactory factory;
+        AccountRepository repository;
 
-        std::cout << "Initial Account Balances:" << std::endl;
-        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
-        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
+        // ===== Test 1: AccountFactory - Create different account types =====
+        std::cout << "=== Test 1: AccountFactory - Create Accounts ===" << std::endl;
+
+        Account* savings1 = factory.create(AccountType::Savings, "USER-001", 1000.0);
+        std::cout << "Created: " << savings1->getAccountType() << " account "
+                  << savings1->getAccountNo() << " for " << savings1->getOwnerId()
+                  << " with balance $" << savings1->getBalance() << std::endl;
+
+        Account* chequing1 = factory.create(AccountType::Chequing, "USER-001", 500.0);
+        std::cout << "Created: " << chequing1->getAccountType() << " account "
+                  << chequing1->getAccountNo() << " for " << chequing1->getOwnerId()
+                  << " with balance $" << chequing1->getBalance() << std::endl;
+
+        Account* savings2 = factory.create(AccountType::Savings, "USER-002", 2000.0);
+        std::cout << "Created: " << savings2->getAccountType() << " account "
+                  << savings2->getAccountNo() << " for " << savings2->getOwnerId()
+                  << " with balance $" << savings2->getBalance() << std::endl;
+
         std::cout << std::endl;
 
-        // Store executed transactions for undo demo
-        std::vector<Transaction*> transactions;
+        // ===== Test 2: AccountRepository - Save accounts =====
+        std::cout << "=== Test 2: AccountRepository - Save Accounts ===" << std::endl;
 
-        // Test 1: Deposit Transaction
-        std::cout << "=== Test 1: Deposit Transaction ===" << std::endl;
-        DepositTransaction* deposit = new DepositTransaction(
-            savings, 500.0, Timestamp::now(), "Paycheck deposit"
-        );
+        repository.save(savings1);
+        repository.save(chequing1);
+        repository.save(savings2);
 
-        std::cout << "Executing deposit of $500..." << std::endl;
-        if (deposit->execute()) {
-            std::cout << "New savings balance: $" << savings.getBalance() << std::endl;
-            transactions.push_back(deposit);
+        std::cout << "Total accounts in repository: " << repository.getAccountCount() << std::endl;
+        std::cout << std::endl;
+
+        // ===== Test 3: Retrieve account by account number =====
+        std::cout << "=== Test 3: Retrieve Account by Number ===" << std::endl;
+
+        std::string lookupAccountNo = savings1->getAccountNo();
+        auto optAccount = repository.getByAccountNo(lookupAccountNo);
+
+        if (optAccount.has_value()) {
+            Account* acc = optAccount.value();
+            std::cout << "Found account: " << acc->getAccountNo() << std::endl;
+            std::cout << "  Type: " << acc->getAccountType() << std::endl;
+            std::cout << "  Owner: " << acc->getOwnerId() << std::endl;
+            std::cout << "  Balance: $" << acc->getBalance() << std::endl;
+        } else {
+            std::cout << "Account not found!" << std::endl;
         }
         std::cout << std::endl;
 
-        // Test 2: Withdrawal Transaction
-        std::cout << "=== Test 2: Withdrawal Transaction ===" << std::endl;
-        WithdrawTransaction* withdrawal = new WithdrawTransaction(
-            chequing, 200.0, Timestamp::now(), "ATM withdrawal"
-        );
+        // ===== Test 4: Find accounts by owner ID =====
+        std::cout << "=== Test 4: Find Accounts by Owner ID ===" << std::endl;
 
-        std::cout << "Executing withdrawal of $200..." << std::endl;
-        if (withdrawal->execute()) {
-            std::cout << "New chequing balance: $" << chequing.getBalance() << std::endl;
-            transactions.push_back(withdrawal);
+        std::vector<std::string> user001Accounts = repository.findByOwnerId("USER-001");
+        std::cout << "Accounts owned by USER-001: " << user001Accounts.size() << std::endl;
+        for (const auto& accountNo : user001Accounts) {
+            auto acc = repository.getByAccountNo(accountNo);
+            if (acc.has_value()) {
+                std::cout << "  - " << accountNo << " ("
+                          << acc.value()->getAccountType() << ") - $"
+                          << acc.value()->getBalance() << std::endl;
+            }
         }
         std::cout << std::endl;
 
-        // Test 3: Transfer Transaction
-        std::cout << "=== Test 3: Transfer Transaction ===" << std::endl;
-        TransferTransaction* transfer = new TransferTransaction(
-            savings, chequing, 300.0, Timestamp::now(),
-            "Transfer to chequing for bills"
-        );
+        // ===== Test 5: Check account existence =====
+        std::cout << "=== Test 5: Check Account Existence ===" << std::endl;
 
-        std::cout << "Executing transfer of $300 from savings to chequing..." << std::endl;
-        if (transfer->execute()) {
-            std::cout << "New savings balance:  $" << savings.getBalance() << std::endl;
-            std::cout << "New chequing balance: $" << chequing.getBalance() << std::endl;
-            transactions.push_back(transfer);
+        std::cout << "Does " << savings1->getAccountNo() << " exist? "
+                  << (repository.existsAccountNo(savings1->getAccountNo()) ? "Yes" : "No")
+                  << std::endl;
+        std::cout << "Does ACC-999999 exist? "
+                  << (repository.existsAccountNo("ACC-999999") ? "Yes" : "No")
+                  << std::endl;
+        std::cout << std::endl;
+
+        // ===== Test 6: Get account balance =====
+        std::cout << "=== Test 6: Get Account Balance ===" << std::endl;
+
+        double balance = repository.getBalance(savings1->getAccountNo());
+        std::cout << "Balance of " << savings1->getAccountNo() << ": $" << balance << std::endl;
+        std::cout << std::endl;
+
+        // ===== Test 7: Get overdraft limit =====
+        std::cout << "=== Test 7: Get Overdraft Limit ===" << std::endl;
+
+        double overdraft = repository.getOverdraftLimit(chequing1->getAccountNo());
+        std::cout << "Overdraft limit of " << chequing1->getAccountNo()
+                  << ": $" << overdraft << std::endl;
+
+        double savingsOverdraft = repository.getOverdraftLimit(savings1->getAccountNo());
+        std::cout << "Overdraft limit of " << savings1->getAccountNo()
+                  << ": $" << savingsOverdraft << " (savings have no overdraft)" << std::endl;
+        std::cout << std::endl;
+
+        // ===== Test 8: Get all accounts =====
+        std::cout << "=== Test 8: Get All Accounts ===" << std::endl;
+
+        std::vector<Account*> allAccounts = repository.getAllAccounts();
+        std::cout << "All accounts in repository:" << std::endl;
+        for (Account* acc : allAccounts) {
+            std::cout << "  " << acc->getAccountNo() << " - "
+                      << acc->getAccountType() << " - Owner: "
+                      << acc->getOwnerId() << " - Balance: $"
+                      << acc->getBalance() << std::endl;
         }
         std::cout << std::endl;
 
-        // Test 4: Display Transaction Records
-        std::cout << "=== Test 4: Transaction Records ===" << std::endl;
-        for (size_t i = 0; i < transactions.size(); ++i) {
-            std::cout << "\nTransaction " << (i + 1) << ":" << std::endl;
-            std::cout << transactions[i]->record() << std::endl;
-        }
+        // ===== Test 9: Remove account =====
+        std::cout << "=== Test 9: Remove Account ===" << std::endl;
+
+        std::string accountToRemove = savings2->getAccountNo();
+        std::cout << "Accounts before removal: " << repository.getAccountCount() << std::endl;
+
+        bool removed = repository.remove(accountToRemove);
+        std::cout << "Removal " << (removed ? "successful" : "failed") << std::endl;
+        std::cout << "Accounts after removal: " << repository.getAccountCount() << std::endl;
         std::cout << std::endl;
 
-        // Test 5: Undo Transactions
-        std::cout << "=== Test 5: Undo Transactions ===" << std::endl;
-        std::cout << "\nCurrent balances:" << std::endl;
-        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
-        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
+        // ===== Test 10: Create account with default balance =====
+        std::cout << "=== Test 10: Create Account with Default Balance ===" << std::endl;
+
+        Account* defaultAccount = factory.create(AccountType::Savings, "USER-003");
+        std::cout << "Created account with default balance: "
+                  << defaultAccount->getAccountNo()
+                  << " - Balance: $" << defaultAccount->getBalance() << std::endl;
+        repository.save(defaultAccount);
         std::cout << std::endl;
 
-        std::cout << "Undoing last transaction (transfer)..." << std::endl;
-        if (transfer->undo()) {
-            std::cout << "After undo:" << std::endl;
-            std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
-            std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
-        }
+        // ===== Test 11: AccountType to String conversion =====
+        std::cout << "=== Test 11: AccountType to String ===" << std::endl;
+
+        std::cout << "AccountType::Savings = "
+                  << AccountFactory::accountTypeToString(AccountType::Savings) << std::endl;
+        std::cout << "AccountType::Chequing = "
+                  << AccountFactory::accountTypeToString(AccountType::Chequing) << std::endl;
+        std::cout << "AccountType::TFSA = "
+                  << AccountFactory::accountTypeToString(AccountType::TFSA) << std::endl;
         std::cout << std::endl;
 
-        std::cout << "Undoing withdrawal..." << std::endl;
-        if (withdrawal->undo()) {
-            std::cout << "After undo:" << std::endl;
-            std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
-        }
+        // ===== Test 12: Account number generation sequence =====
+        std::cout << "=== Test 12: Account Number Generation Sequence ===" << std::endl;
+
+        std::cout << "Creating 3 savings accounts to test sequential numbering:" << std::endl;
+        Account* seq1 = factory.create(AccountType::Savings, "USER-004", 100.0);
+        Account* seq2 = factory.create(AccountType::Savings, "USER-004", 200.0);
+        Account* seq3 = factory.create(AccountType::Savings, "USER-004", 300.0);
+
+        std::cout << "  1. " << seq1->getAccountNo() << std::endl;
+        std::cout << "  2. " << seq2->getAccountNo() << std::endl;
+        std::cout << "  3. " << seq3->getAccountNo() << std::endl;
+        std::cout << "Note: Numbers are sequential!" << std::endl;
+
+        repository.save(seq1);
+        repository.save(seq2);
+        repository.save(seq3);
         std::cout << std::endl;
 
-        std::cout << "Undoing deposit..." << std::endl;
-        if (deposit->undo()) {
-            std::cout << "After undo:" << std::endl;
-            std::cout << "  Savings: $" << savings.getBalance() << std::endl;
-        }
+        // ===== Final Summary =====
+        std::cout << "=== Final Summary ===" << std::endl;
+        std::cout << "Total accounts in repository: " << repository.getAccountCount() << std::endl;
         std::cout << std::endl;
 
-        std::cout << "Final balances (should match initial):" << std::endl;
-        std::cout << "  Savings:  $" << savings.getBalance() << std::endl;
-        std::cout << "  Chequing: $" << chequing.getBalance() << std::endl;
-        std::cout << std::endl;
+        std::cout << "=== All tests completed successfully! ===" << std::endl;
 
-        // Test 6: Failed Transaction
-        std::cout << "=== Test 6: Failed Transaction ===" << std::endl;
-        WithdrawTransaction* failedWithdraw = new WithdrawTransaction(
-            savings, 5000.0, Timestamp::now(), "Attempt large withdrawal"
-        );
-
-        std::cout << "Attempting to withdraw $5000 (should fail)..." << std::endl;
-        if (!failedWithdraw->execute()) {
-            std::cout << "Transaction correctly failed!" << std::endl;
-        }
-        std::cout << std::endl;
-
-        // Test 7: Double Execute Prevention
-        std::cout << "=== Test 7: Double Execute Prevention ===" << std::endl;
-        DepositTransaction* deposit2 = new DepositTransaction(
-            savings, 100.0, Timestamp::now(), "Test deposit"
-        );
-
-        std::cout << "First execute..." << std::endl;
-        deposit2->execute();
-        std::cout << "Balance: $" << savings.getBalance() << std::endl;
-
-        std::cout << "Attempting second execute (should fail)..." << std::endl;
-        deposit2->execute();
-        std::cout << "Balance unchanged: $" << savings.getBalance() << std::endl;
-        std::cout << std::endl;
-
-        // Cleanup
-        for (Transaction* t : transactions) {
-            delete t;
-        }
-        delete failedWithdraw;
-        delete deposit2;
-
-        std::cout << "=== All tests completed ===" << std::endl;
+        // Repository destructor will automatically clean up all accounts
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
