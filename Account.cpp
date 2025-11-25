@@ -1,6 +1,7 @@
 #include "Account.h"
 #include <stdexcept>
 #include <iostream>
+#include "Transaction.h"
 
 // Default constructor
 Account::Account()
@@ -63,7 +64,7 @@ bool Account::withdraw(double amount) {
     }
 
     if (amount > balance) {
-        std::cerr << "Insufficient funds" << std::endl;
+        std::cerr << "Insufficient funds for Withdrawal" << std::endl;
         return false;
     }
 
@@ -106,8 +107,7 @@ bool Account::close() {
 // Destructor - clean up transaction history
 Account::~Account() {
     for (Transaction* t : history) {
-        //TODO uncomment once Transaction class implemented
-        // delete t;
+         delete t;
     }
     history.clear();
 }
