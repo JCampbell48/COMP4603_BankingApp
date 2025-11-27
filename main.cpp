@@ -25,12 +25,12 @@ int main() {
 
         // Create some demo accounts for testing
         // Uncomment for pre-populated data
-        /*
+
         bank.createAccount("demo_user", AccountType::Savings, 1000.0);
         bank.createAccount("demo_user", AccountType::Chequing, 500.0);
         bank.createAccount("alice", AccountType::Savings, 2000.0);
         bank.createAccount("bob", AccountType::Chequing, 1500.0);
-        */
+
 
         // Create and run the UI
         BankUI ui(bank);
