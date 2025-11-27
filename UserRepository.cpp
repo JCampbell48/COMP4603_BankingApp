@@ -10,14 +10,16 @@ UserRepository::~UserRepository() {
     clear();
 }
 
+// Get user by user ID (non-const)
 User* UserRepository::getByUserId(const std::string& userId) {
     auto it = users.find(userId);
     if (it != users.end()) {
         return &(it->second);
     }
-    return nullptr;  // Return null if not found
+    return nullptr;
 }
 
+// Get user by user ID (const)
 const User* UserRepository::getByUserId(const std::string& userId) const {
     auto it = users.find(userId);
     if (it != users.end()) {

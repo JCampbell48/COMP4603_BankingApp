@@ -7,7 +7,8 @@
 using namespace std;
 
 // Constructor
-BankUI::BankUI(BankSystem& bank) : bank(bank), running(true) {
+BankUI::BankUI(BankSystem& bank, AuthService& auth)
+    : bank(bank), auth(auth), currentUser(nullptr), running(true) {
 }
 
 // Clear screen (platform independent)
@@ -30,6 +31,15 @@ void BankUI::displayHeader(const string& title) const {
 // Display main menu
 void BankUI::displayMainMenu() const {
     displayHeader("BANKING SYSTEM - MAIN MENU");
+
+    // Show logged-in user info
+    if (currentUser != nullptr) {
+        cout << "\n  Logged in as: " << currentUser->getName()
+             << " (" << currentUser->getUserId() << ")" << endl;
+    } else {
+        cout << "\n  Not logged in" << endl;
+    }
+
     cout << "\n";
     cout << "  1.  Create New Account" << endl;
     cout << "  2.  Deposit Money" << endl;
@@ -41,19 +51,32 @@ void BankUI::displayMainMenu() const {
     cout << "  8.  View All Accounts (Admin)" << endl;
     cout << "  9.  Delete Account" << endl;
     cout << "  10. Apply Interest" << endl;
+    cout << "  11. Change Password" << endl;
+    cout << "  12. Logout" << endl;
     cout << "  0.  Exit" << endl;
+    cout << "\n";
+    cout << string(60, '-') << endl;
+}
+
+// Display login menu
+void BankUI::displayLoginMenu() const {
+    displayHeader("WELCOME TO BANKING SYSTEM");
+    cout << "\n";
+    cout << "  1. Login" << endl;
+    cout << "  2. Register New User" << endl;
+    cout << "  0. Exit" << endl;
     cout << "\n";
     cout << string(60, '-') << endl;
 }
 
 // Display success message
 void BankUI::displaySuccess(const string& message) const {
-    cout << "\n✓ SUCCESS: " << message << endl;
+    cout << "\nSUCCESS: " << message << endl;
 }
 
 // Display error message
 void BankUI::displayError(const string& message) const {
-    cout << "\n✗ ERROR: " << message << endl;
+    cout << "\nERROR: " << message << endl;
 }
 
 // Press enter to continue
@@ -105,6 +128,18 @@ string BankUI::getStringInput(const string& prompt) const {
     return value;
 }
 
+// Get password input (masked input)
+string BankUI::getPasswordInput(const string& prompt) const {
+    string password;
+    cout << prompt;
+
+    // Simple password input (characters visible for simplicity)
+    // In production, use platform-specific masked input
+    getline(cin, password);
+
+    return password;
+}
+
 // Get account type from user
 AccountType BankUI::getAccountTypeInput() const {
     cout << "\nAccount Types:" << endl;
@@ -124,18 +159,138 @@ AccountType BankUI::getAccountTypeInput() const {
     }
 }
 
-// Handler: Create Account
-void BankUI::handleCreateAccount() {
+// Helper: Check if user is logged in
+bool BankUI::requireLogin() {
+    if (currentUser == nullptr) {
+        displayError("You must be logged in to perform this action.");
+        pressEnterToContinue();
+        return false;
+    }
+    return true;
+}
+
+// Handler: Login
+void BankUI::handleLogin() {
     clearScreen();
-    displayHeader("CREATE NEW ACCOUNT");
+    displayHeader("USER LOGIN");
 
-    string ownerId = getStringInput("\nEnter your User ID: ");
+    string userId = getStringInput("\nUser ID: ");
+    string password = getPasswordInput("Password: ");
 
-    if (ownerId.empty()) {
+    User* user = auth.login(userId, password);
+
+    if (user != nullptr) {
+        currentUser = user;
+        displaySuccess("Login successful!");
+        cout << "  Welcome, " << currentUser->getName() << "!" << endl;
+    } else {
+        displayError("Login failed. Invalid user ID or password.");
+    }
+
+    pressEnterToContinue();
+}
+
+// Handler: Register
+void BankUI::handleRegister() {
+    clearScreen();
+    displayHeader("USER REGISTRATION");
+
+    string userId = getStringInput("\nChoose a User ID: ");
+
+    if (userId.empty()) {
         displayError("User ID cannot be empty.");
         pressEnterToContinue();
         return;
     }
+
+    if (auth.userExists(userId)) {
+        displayError("User ID already exists. Please choose another.");
+        pressEnterToContinue();
+        return;
+    }
+
+    string name = getStringInput("Full Name: ");
+    string email = getStringInput("Email (optional): ");
+    string password = getPasswordInput("Password (min 4 characters): ");
+    string confirmPassword = getPasswordInput("Confirm Password: ");
+
+    if (password != confirmPassword) {
+        displayError("Passwords do not match.");
+        pressEnterToContinue();
+        return;
+    }
+
+    if (auth.registerUser(userId, name, email, password)) {
+        displaySuccess("Registration successful!");
+        cout << "  You can now login with User ID: " << userId << endl;
+    } else {
+        displayError("Registration failed. Please try again.");
+    }
+
+    pressEnterToContinue();
+}
+
+// Handler: Logout
+void BankUI::handleLogout() {
+    if (currentUser != nullptr) {
+        string userName = currentUser->getName();
+        currentUser = nullptr;
+
+        clearScreen();
+        displayHeader("LOGOUT");
+        cout << "\nGoodbye, " << userName << "!" << endl;
+        cout << "You have been logged out successfully." << endl;
+    } else {
+        displayError("You are not logged in.");
+    }
+
+    pressEnterToContinue();
+}
+
+// Handler: Change Password
+void BankUI::handleChangePassword() {
+    if (!requireLogin()) {
+        return;
+    }
+
+    clearScreen();
+    displayHeader("CHANGE PASSWORD");
+
+    string userId = currentUser->getUserId();
+
+    string oldPassword = getPasswordInput("\nCurrent Password: ");
+    string newPassword = getPasswordInput("New Password (min 4 characters): ");
+    string confirmPassword = getPasswordInput("Confirm New Password: ");
+
+    if (newPassword != confirmPassword) {
+        displayError("New passwords do not match.");
+        pressEnterToContinue();
+        return;
+    }
+
+    if (auth.changePassword(userId, oldPassword, newPassword)) {
+        displaySuccess("Password changed successfully!");
+    } else {
+        displayError("Failed to change password. Please check your current password.");
+    }
+
+    pressEnterToContinue();
+}
+
+// Handler: Create Account
+void BankUI::handleCreateAccount() {
+    if (!requireLogin()) {
+        return;
+    }
+
+    clearScreen();
+    displayHeader("CREATE NEW ACCOUNT");
+
+    // Use logged-in user's ID
+    string ownerId = currentUser->getUserId();
+
+    cout << "\nCreating account for: " << currentUser->getName()
+         << " (" << ownerId << ")" << endl;
 
     AccountType type = getAccountTypeInput();
     double initialBalance = getDoubleInput("\nEnter initial deposit amount: $");
@@ -302,17 +457,23 @@ void BankUI::handleCheckBalance() {
 
 // Handler: View My Accounts
 void BankUI::handleViewMyAccounts() {
+    if (!requireLogin()) {
+        return;
+    }
+
     clearScreen();
     displayHeader("MY ACCOUNTS");
 
-    string ownerId = getStringInput("\nEnter your User ID: ");
+    // Use logged-in user's ID
+    string ownerId = currentUser->getUserId();
 
     vector<string> accounts = bank.getAccountsByOwner(ownerId);
 
     if (accounts.empty()) {
-        cout << "\nNo accounts found for user: " << ownerId << endl;
+        cout << "\nYou don't have any accounts yet." << endl;
+        cout << "Use option 1 to create a new account." << endl;
     } else {
-        cout << "\nAccounts for " << ownerId << ":" << endl;
+        cout << "\nAccounts for " << currentUser->getName() << ":" << endl;
         cout << string(60, '-') << endl;
 
         for (const auto& accountNo : accounts) {
@@ -453,11 +614,36 @@ void BankUI::run() {
 
     pressEnterToContinue();
 
-    while (running) {
+    // Login/Register loop
+    while (running && currentUser == nullptr) {
+        clearScreen();
+        displayLoginMenu();
+
+        int choice = getIntInput("Enter your choice (0-2): ");
+
+        switch (choice) {
+            case 1:
+                handleLogin();
+                break;
+            case 2:
+                handleRegister();
+                break;
+            case 0:
+                handleExit();
+                return;
+            default:
+                displayError("Invalid choice. Please select 0-2.");
+                pressEnterToContinue();
+                break;
+        }
+    }
+
+    // Main banking loop (after login)
+    while (running && currentUser != nullptr) {
         clearScreen();
         displayMainMenu();
 
-        int choice = getIntInput("Enter your choice (0-10): ");
+        int choice = getIntInput("Enter your choice (0-12): ");
 
         switch (choice) {
             case 1:
@@ -490,11 +676,17 @@ void BankUI::run() {
             case 10:
                 handleApplyInterest();
                 break;
+            case 11:
+                handleChangePassword();
+                break;
+            case 12:
+                handleLogout();
+                break;
             case 0:
                 handleExit();
                 break;
             default:
-                displayError("Invalid choice. Please select 0-10.");
+                displayError("Invalid choice. Please select 0-12.");
                 pressEnterToContinue();
                 break;
         }

@@ -1,9 +1,9 @@
-#pragma once
+#ifndef USERREPOSITORY_H
+#define USERREPOSITORY_H
 
 #include <string>
 #include <map>
 #include <vector>
-#include <optional>
 #include "User.h"
 
 /**
@@ -22,10 +22,10 @@ public:
     // Destructor
     ~UserRepository();
 
-    // Get user by user ID
+    // Get user by user ID (returns nullptr if not found)
     User* getByUserId(const std::string& userId);
 
-    // Get user by user ID (const version)
+    // Get user by user ID (const version, returns nullptr if not found)
     const User* getByUserId(const std::string& userId) const;
 
     // Save (add or update) a user
@@ -46,3 +46,5 @@ public:
     // Clear all users
     void clear();
 };
+
+#endif // USERREPOSITORY_H
