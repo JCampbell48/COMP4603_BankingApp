@@ -13,11 +13,10 @@ BankUI::BankUI(BankSystem& bank, AuthService& auth)
 
 // Clear screen (platform independent)
 void BankUI::clearScreen() const {
-    #ifdef _WIN32
-        system("cls");
-    #else
-        system("clear");
-    #endif
+    // TODO
+    // getting error clearing the screen so
+    // will have to implement later
+
 }
 
 // Display header
@@ -60,7 +59,7 @@ void BankUI::displayMainMenu() const {
 
 // Display login menu
 void BankUI::displayLoginMenu() const {
-    displayHeader("WELCOME TO BANKING SYSTEM");
+    displayHeader("WELCOME TO BANKING SYSTEM!");
     cout << "\n";
     cout << "  1. Login" << endl;
     cout << "  2. Register New User" << endl;

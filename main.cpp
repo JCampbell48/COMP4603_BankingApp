@@ -43,17 +43,17 @@ int main() {
         persistence.loadAll(repository, userRepository, factory);
         std::cout << std::endl;
 
-        // Optional: Create a demo user for testing (only if no users exist)
+        // Create a demo user for testing (only if no users exist)
         // Uncomment to create a test user (user: demo, password: demo123)
 
-        // if (auth.getUserCount() == 0) {
-        //     std::cout << "Creating demo user..." << std::endl;
-        //     auth.registerUser("demo", "Demo User", "demo@example.com", "demo123");
-        //     bank.createAccount("demo", AccountType::Savings, 1000.0);
-        //     bank.createAccount("demo", AccountType::Chequing, 500.0);
-        //     persistence.saveAll(repository, userRepository);
-        //     std::cout << std::endl;
-        // }
+        if (auth.getUserCount() == 0) {
+            std::cout << "Creating demo user..." << std::endl;
+            auth.registerUser("demo", "Demo User", "demo@example.com", "demo123");
+            bank.createAccount("demo", AccountType::Savings, 1000.0);
+            bank.createAccount("demo", AccountType::Chequing, 500.0);
+            persistence.saveAll(repository, userRepository);
+            std::cout << std::endl;
+        }
 
 
         // Create and run the UI
