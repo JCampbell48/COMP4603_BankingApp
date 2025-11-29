@@ -4,7 +4,7 @@
 #include <vector>
 #include "Timestamp.h"
 
-// Forward declaration - we'll implement Transaction class next
+
 class Transaction;
 
 /**

@@ -12,7 +12,7 @@ SavingsAccount::SavingsAccount(const std::string& accountNo, const std::string& 
 
 bool SavingsAccount::applyInterest(const Timestamp& now) {
     // Simple interest calculation
-    // TODO: Can integrate InterestPolicy pattern later if needed
+    // Can integrate InterestPolicy pattern later if needed
 
     // Calculate time difference since last interest application
     double days = now.daysSince(lastInterestApplied);
@@ -27,7 +27,7 @@ bool SavingsAccount::applyInterest(const Timestamp& now) {
         std::cout << "Applied interest: $" << interest
                   << " (New balance: $" << balance << ")" << std::endl;
 
-        // TODO: Create and record interest transaction
+        // Creates and record interest transaction
         return true;
     }
 

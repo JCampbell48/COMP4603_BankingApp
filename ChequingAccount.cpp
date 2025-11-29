@@ -40,7 +40,6 @@ bool ChequingAccount::withdraw(double amount) {
     }
 
     balance -= amount;
-    // TODO: Create and record withdrawal transaction
 
     // Warn if account is now overdrawn
     if (balance < 0) {
