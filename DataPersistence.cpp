@@ -216,6 +216,11 @@ bool DataPersistence::loadAll(AccountRepository& accountRepo,
                               AccountFactory& factory) {
     bool usersOk = loadUsers(userRepo);
     bool accountsOk = loadAccounts(accountRepo, factory);
+
+    if (accountsOk) {
+        factory.updateCounterFromLoadedAccounts(accountRepo);
+    }
+
     return accountsOk && usersOk;
 }
 

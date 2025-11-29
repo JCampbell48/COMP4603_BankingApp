@@ -1,4 +1,5 @@
 #include "AccountFactory.h"
+#include "AccountRepository.h"
 #include "SavingsAccount.h"
 #include "ChequingAccount.h"
 #include <sstream>
@@ -37,6 +38,37 @@ std::string AccountFactory::generateAccountNumber(AccountType type) {
     ss << std::setfill('0') << std::setw(6) << accountCounter++;
 
     return ss.str();
+}
+
+// Updates the static counter from all the loaded accounts
+void AccountFactory::updateCounterFromLoadedAccounts(const AccountRepository& repo)
+{
+    int maxNumeric = 0;
+
+    std::vector<Account*> accounts = repo.getAllAccounts();
+
+    for (Account* acc : accounts) {
+        std::string accNo = acc->getAccountNo();
+
+        std::size_t pos = accNo.find_last_not_of("0123456789");
+        if (pos == std::string::npos || pos + 1 >= accNo.size()) {
+            continue;
+        }
+
+        std::string numPart = accNo.substr(pos + 1);
+        try {
+            int value = std::stoi(numPart);
+            if (value > maxNumeric) {
+                maxNumeric = value;
+            }
+        } catch (...) {
+            // ignore malformed IDs
+        }
+    }
+
+    if (maxNumeric >= accountCounter) {
+        accountCounter = maxNumeric + 1;
+    }
 }
 
 // Create account with default balance (0.0)

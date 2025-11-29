@@ -5,6 +5,8 @@
 #include "AccountType.h"
 #include "Account.h"
 
+class AccountRepository;
+
 /**
  * AccountFactory - Factory Pattern for creating accounts
  * Centralizes account creation logic and ensures consistent account number generation
@@ -19,6 +21,8 @@ private:
 public:
     // Constructor
     AccountFactory();
+
+    void updateCounterFromLoadedAccounts(const AccountRepository& repo);
 
     // Create account of specified type
     // Returns pointer to newly created account (caller takes ownership)
